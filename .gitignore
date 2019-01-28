@@ -5,3 +5,4 @@ a.out
 test.ir
 test.o
 lib/libpipes.a
+lib/libpipes.so

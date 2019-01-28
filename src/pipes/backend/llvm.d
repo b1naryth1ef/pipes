@@ -8,6 +8,10 @@ import pipes.frontend.lexer : Lexer;
 import pipes.frontend.parser : Parser;
 import pipes.backend.bytecode;
 
+extern (C) {
+  void LLVMLinkInMCJIT();
+}
+
 class LLVMCompiler {
   protected BytecodeCompiler bytecodeCompiler;
   protected LLVMBuilderRef builder;
@@ -32,13 +36,15 @@ class LLVMCompiler {
   }
 
   void runModule() {
+
     char* error;
     LLVMVerifyModule(this.module_, LLVMAbortProcessAction, &error);
     LLVMDisposeMessage(error);
 
     LLVMExecutionEngineRef engine;
-    // LLVMLinkInJIT();
+    LLVMLinkInMCJIT();
     LLVMInitializeNativeTarget();
+    LLVMLoadLibraryPermanently("lib/libpipes.so");
     if (LLVMCreateExecutionEngineForModule(&engine, this.module_, &error) != 0) {
       assert(false);
     }

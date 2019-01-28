@@ -1,7 +1,3 @@
-- add registry of built in functions
-- add concept of types somehow
-- BCI.CALL needs a target
-
 - Expand lexer
   - Source location information
   - Error reporting

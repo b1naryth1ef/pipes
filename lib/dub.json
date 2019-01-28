@@ -1,6 +1,15 @@
 {
   "name": "pipeslib",
   "dflags": ["-betterC"],
-  "targetType": "staticLibrary",
-  "targetName": "pipes"
+  "targetName": "pipes",
+  "configurations": [
+    {
+      "name": "static",
+      "targetType": "staticLibrary"
+    },
+    {
+      "name": "dynamic",
+      "targetType": "dynamicLibrary"
+    }
+  ]
 }

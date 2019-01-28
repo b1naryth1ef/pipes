@@ -124,7 +124,7 @@ class BytecodeCompiler {
       }
     }
 
-    return this.addOp(BCI.CALL, args);
+    return this.addOp(BCI.CALL, args, target.returnType);
   }
 
   protected BCOP getOp(BCID id) {
