@@ -1,0 +1,31 @@
+'abc' @> toUpper -> append('!') -> echo
+
+ASTNodeString { contents = 'abc' }
+ASTNodeMap { }
+ASTNodeCall { target = 'toUpper' }
+ASTNodePass { }
+ASTNodeCall { target = 'append', args = [ ASTNodeString { contents = '!' } ] }
+ASTNodePass { }
+ASTNodeCall { target = 'echo' }
+
+$step_2 = BCLambda {
+  $step_3(toUpper)
+}
+
+$step_3 = BCLambda {
+  $step_4(append)
+}
+
+$step_4 = BCLambda {
+  // echo
+}
+
+$step_1 = BCLambda {
+  BCForEach {
+    type = String
+    source = BCLiteralString
+    target = $step_2
+  }
+}
+
+call $step_1

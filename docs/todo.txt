@@ -1,0 +1,24 @@
+- add registry of built in functions
+- add concept of types somehow
+- BCI.CALL needs a target
+
+- Expand lexer
+  - Source location information
+  - Error reporting
+- Expand parser
+  - Source location information
+  - Error reporting
+- Create Bytecode Compilation
+  - Simple bytecode compiler which does checking across the program
+- Create VM
+  - Takes bytecode and interperts (requires implementing all functions? stdlib?)
+  - Build out CLI stuff here
+- Create LLVM Backend
+  - Takes bytecode and compiles
+
+
+- Figure out what parallel map looks like
+  - Would be nice to control concurrency? Or do we let that sit in a CLI arg?
+  - @!> ?
+  - If its a cli arg we could just have every map be parallel? (does that... work?)
+  - This will complicate reduce (since we will have to "notify" the reducer when all the maps are done (maybe ok?)

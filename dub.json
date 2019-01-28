@@ -1,0 +1,45 @@
+{
+  "name": "pipes",
+  "configurations": [
+    {
+      "name": "default-linux",
+      "platforms": ["linux"],
+      "targetType": "executable",
+      "versions": ["LLVM7"],
+      "dependencies": {
+        "llvm-d": "~>2.4.1"
+      },
+      "libs": ["LLVM-7"]
+    },
+    {
+      "name": "default-osx",
+      "platforms": ["osx"],
+      "targetType": "executable",
+      "versions": ["cllvm"],
+      "dependencies": {
+        "llvm-d": "~>2.4.1"
+      },
+      "libs": ["cllvm"]
+    },
+    {
+      "name": "default-windows",
+      "platforms": ["windows"],
+      "targetType": "executable",
+      "versions": ["LLVM6"],
+      "dependencies": {
+        "llvm-d": "~>2.4.1"
+      },
+      "libs": ["LLVM-6.0"]
+    },
+    {
+      "name": "unittest",
+      "platforms": ["linux"],
+      "versions": ["LLVM7"],
+      "dependencies": {
+        "llvm-d": "~>2.4.1"
+      },
+      "libs": ["LLVM-7"]
+    }
+  ]
+}
+

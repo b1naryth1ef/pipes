@@ -1,0 +1,6 @@
+{
+  "name": "pipeslib",
+  "dflags": ["-betterC"],
+  "targetType": "staticLibrary",
+  "targetName": "pipes"
+}

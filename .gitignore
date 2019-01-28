@@ -1,0 +1,7 @@
+a.out
+.dub/
+/pipes
+/pipes-test-unittest
+test.ir
+test.o
+lib/libpipes.a
