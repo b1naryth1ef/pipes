@@ -29,3 +29,13 @@ $step_1 = BCLambda {
 }
 
 call $step_1
+
+
+-- Types --
+
+Enumerable
+  - List
+  - Stream
+  - Tuple
+String
+Number

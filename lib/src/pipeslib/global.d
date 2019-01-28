@@ -4,6 +4,13 @@ import core.stdc.stdio : printf, snprintf;
 import core.stdc.stdlib : malloc, free;
 import core.stdc.string : memcpy;
 
+/**
+  Streams represent a unbounded, ordered set of typed data.
+*/
+struct Stream {
+
+}
+
 struct PipeString {
   ulong length;
   immutable(char)* start;

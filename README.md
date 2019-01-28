@@ -1,11 +1,13 @@
 # Pipes
 
+> Pipes is currently being developed and probably doesn't work how you'd like it too.
+
 Pipes is a command line utility to make common unix scripting tasks easier and faster. Pipes is targeted at unix users who are looking to extend or augment their bash scripting ability via a terse, modern and logical programming language. Pipes is stream based which aligns well with the unix and bash data flow methodologies.
 
 ## Examples
 
 ```sh
-$ cat 'students.csv' > pipes 'csv.lines @> skip(1) |> equals($1, 'Student') |> $3 => average
+$ cat 'students.csv' > pipes 'lines -> skip(1) @> csv -> equals($1, 'Student') |> $3 => average
 16.4
 
 $ cat 'logs.txt' > pipes 'lines @> extract('((?:[0-9]{1,3}\.){3}[0-9]{1,3})') => occurences

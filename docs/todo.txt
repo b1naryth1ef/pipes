@@ -1,20 +1,38 @@
+- add tuple
+    bounded list of strict types
+- list/tuple/argument support
+  - if a function produces a list or tuple we can index them via $1, $2, $3, etc
+
+
 - Expand lexer
   - Source location information
   - Error reporting
 - Expand parser
   - Source location information
   - Error reporting
-- Create Bytecode Compilation
-  - Simple bytecode compiler which does checking across the program
-- Create VM
-  - Takes bytecode and interperts (requires implementing all functions? stdlib?)
-  - Build out CLI stuff here
-- Create LLVM Backend
-  - Takes bytecode and compiles
+- Build out CLI
+  - Support for stdin
+  - Support for producing a usable artifact
 
+- Figure out what reduce looks like
+  - Need to collect into either a list or (ideally) stream
+  - How do we express this in bytecode (or for that matter IR...)
 
 - Figure out what parallel map looks like
   - Would be nice to control concurrency? Or do we let that sit in a CLI arg?
   - @!> ?
   - If its a cli arg we could just have every map be parallel? (does that... work?)
   - This will complicate reduce (since we will have to "notify" the reducer when all the maps are done (maybe ok?)
+
+- Figure out how logical operations work
+  - We don't have bools (and I want to avoid them), so maybe we let integers be used to "break" streams via an operator (?)
+  - e.g. `1 -> sum(2) -> equals(3)? |> "1 + 2 = 3"`
+  - this may be the best way because it won't leak our "step" abstraction into individual functions (since ? will get compiled into a bytecode comparison that happens before the function call continuation to the next step)
+
+
+- stdlib stuff
+  - lines(string) -> stream
+  - csv(string) -> list<string>
+  - skip(number) -> void
+  - average(stream<number>) -> number
+  - occurences(stream<string>) -> list<tuple<number, string>>
