@@ -4,5 +4,6 @@ a.out
 /pipes-test-unittest
 test.ir
 test.o
+test.csv
 lib/libpipes.a
 lib/libpipes.so

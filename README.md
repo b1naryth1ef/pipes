@@ -14,7 +14,7 @@ $ cat 'logs.txt' > pipes 'lines @> extract('((?:[0-9]{1,3}\.){3}[0-9]{1,3})') =>
 192.168.1.2 12234
 192.168.1.1 233
 
-$ dirs @> fs.find(f'$1/*.rar') -> index(0) -> pushd(path.dir($1)) |> path.file($1) -> try(exec(f'unrar x $1')) |> fs.find(f'*.[mkv|mov|mp4|avi]') @> try(exec(f'mv $1 /media/storage/Movies/'))
+$ dirs @> fs.find(f'$1/*.rar') @> pushd(path.dir($1)) |> path.file($1) -> try(exec(f'unrar x $1')) |> fs.find(f'*.[mkv|mov|mp4|avi]') @> try(exec(f'mv $1 /media/storage/Movies/'))
 ```
 
 ## Data Flow

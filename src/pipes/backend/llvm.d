@@ -199,6 +199,9 @@ LLVMTypeRef convertTypeToLLVM(Type type) {
       return LLVMPointerType(structType, 0);
     case BaseType.NUMBER:
       return LLVMDoubleType();
+    case BaseType.STREAM:
+      // TODO: qualify the full struct?
+      return LLVMPointerType(LLVMIntType(8), 0);
     default:
       assert(false);
   }

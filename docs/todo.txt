@@ -36,3 +36,4 @@
   - skip(number) -> void
   - average(stream<number>) -> number
   - occurences(stream<string>) -> list<tuple<number, string>>
+  - enumerate(stream) -> stream<tuple<number, string>>
