@@ -8,6 +8,7 @@ enum BaseType {
   NUMBER = 3,
   ARRAY = 4,
   STREAM = 5,
+  TUPLE = 6,
 }
 
 class Type {
@@ -16,9 +17,13 @@ class Type {
   // Only for arrays and streams
   Type elementType;
 
-  this(BaseType baseType, Type elementType = null) {
+  // Only for tuples
+  Type[] fieldTypes;
+
+  this(BaseType baseType, Type elementType = null, Type[] fieldTypes = null) {
     this.baseType = baseType;
     this.elementType = elementType;
+    this.fieldTypes = fieldTypes;
   }
 
   override bool opEquals(Object other) {
@@ -27,9 +32,16 @@ class Type {
     }
 
     if (auto otherType = cast(Type)other) {
+      if (this.baseType == BaseType.STREAM && otherType.baseType == BaseType.STREAM) {
+        if (this.elementType is null || otherType.elementType is null) {
+          return true;
+        }
+      }
+
       return (
         (otherType.baseType == this.baseType) &&
-        (otherType.elementType == this.elementType)
+        (otherType.elementType == this.elementType) &&
+        (otherType.fieldTypes == this.fieldTypes)
       );
     }
 

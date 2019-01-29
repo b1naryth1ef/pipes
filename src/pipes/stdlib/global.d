@@ -10,5 +10,12 @@ static this() {
 
   auto stringStream = new Type(BaseType.STREAM, builtinTypes["string"]);
   registerBuiltinFunction("lines", [], stringStream);
-  registerBuiltinFunction("debug_stream", [stringStream], null);
+
+  auto anyStream = new Type(BaseType.STREAM);
+  registerBuiltinFunction("length", [anyStream], builtinTypes["number"]);
+  registerBuiltinFunction("ntoa", [builtinTypes["number"]], builtinTypes["string"]);
+
+  auto numberStringTuple = new Type(BaseType.TUPLE, null, [builtinTypes["number"], builtinTypes["string"]]);
+  auto numberStringTupleStream = new Type(BaseType.STREAM, numberStringTuple);
+  registerBuiltinFunction("enumerate", [stringStream], numberStringTupleStream);
 }

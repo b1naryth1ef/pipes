@@ -18,16 +18,14 @@ extern (C) {
     void* data;
 
     /**
-      This function returns true if more data can be read from the stream. Even
-       if this function does return true, its possible that calls to nextString or
-       nextNumber do not return a value.
-    */
-    bool function(Stream*) more;
-
-    /**
       Returns the next string in the stream, or null if no further entries exist.
     */
     PipeString* function(Stream*) nextString;
+
+    /**
+      Returns the next tuple in the stream, or null if no further entires exist.
+    */
+    PipeTuple* function(Stream*) nextTuple;
 
     /**
       Copies the next double in the stream to the given memory location. If no
@@ -77,32 +75,49 @@ extern (C) {
     return a + b;
   }
 
-  void debug_stream(Stream* stream) {
-    assert(stream.nextString);
+  PipeString* ntoa(double input) {
+    ubyte[4096] buffer;
+    auto size = snprintf(cast(char*)buffer.ptr, 4096, "%f", input);
 
-    size_t lineno = 0;
-    while (stream.more(stream)) {
-      lineno++;
+    auto memory = malloc(PipeString.sizeof + size);
+    auto newString = cast(PipeString*)memory;
+    auto newStringContents = cast(immutable(char)*)&memory[PipeString.sizeof];
 
-      auto next = stream.nextString(stream);
-      if (next is null) {
-        return;
+    memcpy(cast(void*)newStringContents, buffer.ptr, size);
+    newString.length = size;
+    newString.start = newStringContents;
+
+    return newString;
+  }
+
+  double length(Stream* stream) {
+    size_t length = 0;
+
+    if (stream.nextString !is null) {
+      while (stream.nextString(stream) !is null) {
+        length++;
       }
-
-      printf("[%i] %.*s\n", lineno, next.length, next.start);
+    } else if (stream.nextNumber !is null) {
+      double v;
+      while (stream.nextNumber(stream, &v)) {
+        length++;
+      }
+    } else if (stream.nextTuple !is null) {
+      while (stream.nextTuple(stream) !is null) {
+        length++;
+      }
+    } else {
+      assert(false);
     }
+
+    return cast(double)length;
   }
 
   /// Implementation for a stream which reads data from a file line by line.
   struct FileLineStream {
     FILE* file;
-    bool done = false;
     ubyte[4096] previousBuffer;
     size_t previousBufferLength;
-  }
-
-  bool streamLinesMore(Stream* stream) {
-    return (cast(FileLineStream*)stream.data).done;
   }
 
   PipeString* streamLinesNextString(Stream* stream) {
@@ -134,7 +149,6 @@ extern (C) {
       // If we didn't read anything, that means we're EOF (so everything currently
       //  in our PipeString buffer is a line).
       if (readSize == 0) {
-        fs.done = true;
         return result;
       }
 
@@ -143,7 +157,6 @@ extern (C) {
       //  this function.
       if (newlineIndex > -1) {
         foundNewline = true;
-        fs.done = true;
 
         ptrdiff_t remainingLength = readSize - newlineIndex - 1;
         if (remainingLength > 0) {
@@ -195,9 +208,66 @@ extern (C) {
     fileStream.file = stdin;
     fileStream.previousBufferLength = 0;
     stream.data = cast(void*)fileStream;
-    stream.more = &streamLinesMore;
     stream.nextString = &streamLinesNextString;
+    stream.nextTuple = null;
+    stream.nextNumber = null;
     return stream;
+  }
+
+  /// Enumerate
+  struct EnumerateStream {
+    Stream* source;
+    size_t index = 0;
+  }
+
+
+  PipeTuple* streamEnumerateNextTuple(Stream* stream) {
+    auto enumStream = cast(EnumerateStream*)stream.data;
+    auto next = enumStream.source.nextString(enumStream.source);
+
+    if (next is null) {
+      return null;
+    }
+
+    auto result = createPipeTuple(next, cast(double)enumStream.index);
+
+    enumStream.index += 1;
+    return result;
+  }
+
+  Stream* enumerate(Stream* source) {
+    auto memory = malloc(Stream.sizeof + EnumerateStream.sizeof);
+    auto stream = cast(Stream*)memory;
+    auto enumStream = cast(EnumerateStream*)&memory[Stream.sizeof];
+
+    enumStream.source = source;
+    stream.data = cast(void*)enumStream;
+    stream.nextTuple = &streamEnumerateNextTuple;
+    stream.nextString = null;
+    stream.nextNumber = null;
+
+    // TODO: support numbers
+    assert(source.nextString);
+
+    return stream;
+  }
+
+  struct PipeTuple {}
+
+  PipeTuple* createPipeTuple(Args...)(Args args) {
+    size_t size = 0;
+    foreach (arg; args) {
+      size += arg.sizeof;
+    }
+
+    auto memory = malloc(size);
+    size_t pos = 0;
+    foreach (arg; args) {
+      memcpy(&memory[pos], &arg, arg.sizeof);
+      pos += arg.sizeof;
+    }
+
+    return cast(PipeTuple*)memory;
   }
 }
 
@@ -205,4 +275,8 @@ extern (C) {
 unittest {
   auto str = PipeString.fromString("test");
   echo(&str);
+
+  double a = 1.0;
+  double b = 2.0;
+  auto tuple = createPipeTuple(a, b);
 }
