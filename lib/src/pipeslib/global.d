@@ -4,6 +4,8 @@ import core.stdc.stdio : printf, snprintf, FILE, stdin, fread;
 import core.stdc.stdlib : malloc, free, realloc;
 import core.stdc.string : memcpy, memchr;
 
+alias PipeNumber = double;
+
 extern (C) {
   /**
     This struct represents a stream of data (either strings or numbers) that can
@@ -32,7 +34,19 @@ extern (C) {
        further entries exist, this function returns false and will not copy any
        value into the passed memory location.
     */
-    bool function(Stream*, double*) nextNumber;
+    bool function(Stream*, PipeNumber*) nextNumber;
+  }
+
+  PipeString* stream_next_string(Stream* stream) {
+    return stream.nextString(stream);
+  }
+
+  PipeTuple* stream_next_tuple(Stream* stream) {
+    return stream.nextTuple(stream);
+  }
+
+  bool stream_next_number(Stream* stream, PipeNumber* result) {
+    return stream.nextNumber(stream, result);
   }
 
   /**
@@ -71,11 +85,11 @@ extern (C) {
     return newString;
   }
 
-  double sum(double a, double b) {
+  PipeNumber sum(PipeNumber a, PipeNumber b) {
     return a + b;
   }
 
-  PipeString* ntoa(double input) {
+  PipeString* ntoa(PipeNumber input) {
     ubyte[4096] buffer;
     auto size = snprintf(cast(char*)buffer.ptr, 4096, "%f", input);
 
@@ -90,7 +104,7 @@ extern (C) {
     return newString;
   }
 
-  double length(Stream* stream) {
+  PipeNumber length(Stream* stream) {
     size_t length = 0;
 
     if (stream.nextString !is null) {
@@ -98,7 +112,7 @@ extern (C) {
         length++;
       }
     } else if (stream.nextNumber !is null) {
-      double v;
+      PipeNumber v;
       while (stream.nextNumber(stream, &v)) {
         length++;
       }
@@ -110,7 +124,11 @@ extern (C) {
       assert(false);
     }
 
-    return cast(double)length;
+    return cast(PipeNumber)length;
+  }
+
+  PipeNumber strLength(PipeString* str) {
+    return str.length;
   }
 
   /// Implementation for a stream which reads data from a file line by line.
@@ -229,7 +247,7 @@ extern (C) {
       return null;
     }
 
-    auto result = createPipeTuple(next, cast(double)enumStream.index);
+    auto result = createPipeTuple(next, cast(PipeNumber)enumStream.index);
 
     enumStream.index += 1;
     return result;
@@ -269,6 +287,18 @@ extern (C) {
 
     return cast(PipeTuple*)memory;
   }
+
+  PipeNumber sumStream(Stream* stream) {
+    assert(stream.nextNumber);
+    PipeNumber sum;
+    PipeNumber next;
+
+    while (stream.nextNumber(stream, &next)) {
+      sum += next;
+    }
+
+    return sum;
+  }
 }
 
 
@@ -276,7 +306,7 @@ unittest {
   auto str = PipeString.fromString("test");
   echo(&str);
 
-  double a = 1.0;
-  double b = 2.0;
+  PipeNumber a = 1.0;
+  PipeNumber b = 2.0;
   auto tuple = createPipeTuple(a, b);
 }

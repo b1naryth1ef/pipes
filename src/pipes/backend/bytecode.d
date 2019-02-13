@@ -11,6 +11,7 @@ alias BCID = ulong;
 enum BCI {
   CALL,  // FUNCTION, ARGS ...
   LOAD_CONST,  // CONST_ID
+  ARG,  // INDEX
 }
 
 class BCOP {
@@ -27,13 +28,43 @@ class BCOP {
   }
 }
 
+class BCStep {
+  BCID id;
+  ASTNodeStep step;
+  BCOP[] ops;
+
+  this(BCID id, ASTNodeStep step) {
+    this.id = id;
+    this.step = step;
+  }
+
+  @property Type returnType() {
+    if (step.type == StepType.PASS || step.type == StepType.MAP) {
+      if (ops.length) {
+        return ops[$-1].resultType;
+      }
+    } else if (step.type == StepType.STOP) {
+      return builtinTypes["void"];
+    } else if (step.type == StepType.CONTINUE) {
+      return null;
+    } else {
+      assert(false);
+    }
+
+    return builtinTypes["void"];
+  }
+}
+
 class BytecodeCompiler {
+  BCStep[] steps;
   BCOP[] ops;
   BCID[BuiltinFunction] builtinFunctionIds;
   string[BCID] constantStrings;
 
+  protected BCStep previousStep;
+  protected BCStep currentStep;
   protected BCID idx = 1;
-  protected BCID previousStepValue = 0;
+  protected BCID stepIdx = 1;
 
   this() {
     foreach (builtin; builtinFunctions.values) {
@@ -54,7 +85,9 @@ class BytecodeCompiler {
   }
 
   protected BCID addOp(BCI op, BCID[] args, Type resultType = null) {
+    assert(this.currentStep);
     auto res = new BCOP(this.idx++, op, args, resultType);
+    this.currentStep.ops ~= res;
     this.ops ~= res;
     return res.id;
   }
@@ -73,11 +106,11 @@ class BytecodeCompiler {
   }
 
   protected BCID compileStep(ASTNodeStep step) {
-    auto exprResult = this.compileOne(step.expr);
+    this.currentStep = new BCStep(this.stepIdx++, step);
+    this.steps ~= this.currentStep;
 
-    if (step.type == StepType.PASS) {
-      this.previousStepValue = exprResult;
-    }
+    auto exprResult = this.compileOne(step.expr);
+    this.previousStep = this.currentStep;
 
     return exprResult;
   }
@@ -95,8 +128,16 @@ class BytecodeCompiler {
 
     args ~= this.builtinFunctionIds[target];
 
-    if (this.previousStepValue != 0) {
-      args ~= this.previousStepValue;
+    if (this.previousStep !is null) {
+      Type previousStepReturnType = this.previousStep.returnType;
+
+      if (this.previousStep.step.type == StepType.MAP) {
+        assert(previousStepReturnType.baseType == BaseType.STREAM);
+        previousStepReturnType = previousStepReturnType.elementType;
+      }
+
+      auto arg0 = this.addOp(BCI.ARG, [0], previousStepReturnType);
+      args ~= arg0;
     }
 
     foreach (arg; call.args) {
@@ -104,7 +145,7 @@ class BytecodeCompiler {
     }
 
     if (args.length - 1 != target.argTypes.length) {
-      writefln("mismatched arguments count %s vs %s", args.length, target.argTypes.length);
+      writefln("mismatched arguments count %s vs %s (%s)", args.length - 1, target.argTypes.length, target.name);
       assert(false);
     }
 
@@ -160,5 +201,5 @@ unittest {
 
   assert(testCompile("'Hello World'").ops.length == 1);
   assert(testCompile("echo('Hello World')").ops.length == 2);
-  assert(testCompile("'Hello World' -> echo").ops.length == 2);
+  assert(testCompile("'Hello World' -> echo").ops.length == 3);
 }
