@@ -247,7 +247,7 @@ extern (C) {
       return null;
     }
 
-    auto result = createPipeTuple(next, cast(PipeNumber)enumStream.index);
+    auto result = createPipeTuple(cast(PipeNumber)enumStream.index, next);
 
     enumStream.index += 1;
     return result;
@@ -258,6 +258,7 @@ extern (C) {
     auto stream = cast(Stream*)memory;
     auto enumStream = cast(EnumerateStream*)&memory[Stream.sizeof];
 
+    enumStream.index = 0;
     enumStream.source = source;
     stream.data = cast(void*)enumStream;
     stream.nextTuple = &streamEnumerateNextTuple;

@@ -9,6 +9,7 @@ enum ASTNodeType {
 
   STRING,  // Literal string
   NUMBER,  // Literal number
+  VARIABLE,  // Variable
 
   CALL,  // Function call
 }
@@ -72,6 +73,10 @@ class Parser {
         auto node = new ASTNode(ASTNodeType.STRING);
         node.string_.string_ = token.string_;
         return node;
+      case TokenType.VARIABLE:
+        auto node = new ASTNode(ASTNodeType.VARIABLE);
+        node.variable.index = cast(long)token.number_;
+        return node;
       default:
         writefln("Unhandled token type: %s", token.type);
         assert(false);
@@ -106,6 +111,7 @@ class ASTNode {
     ASTNodeStep step;
     ASTNodeString string_;
     ASTNodeNumber number;
+    ASTNodeVariable variable;
     ASTNodeCall call;
   }
 }
@@ -129,6 +135,10 @@ struct ASTNodeString {
 
 struct ASTNodeNumber {
   double number;
+}
+
+struct ASTNodeVariable {
+  long index;
 }
 
 struct ASTNodeCall {
@@ -158,5 +168,11 @@ unittest {
   assert(tree[0].step.type == StepType.PASS);
   assert(tree[1].type == ASTNodeType.STEP);
   assert(tree[1].step.type == StepType.STOP);
+
+  tree = testParse("$55 -> echo");
+  assert(tree.length == 2);
+  assert(tree[0].type == ASTNodeType.STEP);
+  assert(tree[0].step.expr.type == ASTNodeType.VARIABLE);
+  assert(tree[0].step.expr.variable.index == 55);
 }
 

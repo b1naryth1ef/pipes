@@ -26,4 +26,5 @@ static this() {
   registerBuiltinFunction("enumerate", [stringStream], numberStringTupleStream);
 
   registerBuiltinFunction("stream_next_string", [anyStream], builtinTypes["string"]);
+  registerBuiltinFunction("stream_next_tuple", [anyStream], builtinTypes["any"]);
 }

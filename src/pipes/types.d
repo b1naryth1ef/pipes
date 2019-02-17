@@ -9,6 +9,7 @@ enum BaseType {
   ARRAY = 4,
   STREAM = 5,
   TUPLE = 6,
+  ANY = 7,
 }
 
 class Type {
@@ -38,6 +39,10 @@ class Type {
         }
       }
 
+      if (this.baseType == BaseType.ANY || otherType.baseType == BaseType.ANY) {
+        return true;
+      }
+
       return (
         (otherType.baseType == this.baseType) &&
         (otherType.elementType == this.elementType) &&
@@ -62,4 +67,5 @@ static this() {
   builtinTypes["void"] = new Type(BaseType.VOID);
   builtinTypes["string"] = new Type(BaseType.STRING);
   builtinTypes["number"] = new Type(BaseType.NUMBER);
+  builtinTypes["any"] = new Type(BaseType.ANY);
 }

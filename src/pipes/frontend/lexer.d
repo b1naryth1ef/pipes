@@ -1,6 +1,7 @@
 module pipes.frontend.lexer;
 
 import std.stdio : writefln;
+import std.conv : to;
 
 class StringBuffer {
   size_t idx;
@@ -117,6 +118,9 @@ class Lexer {
           return new Token(TokenType.SY_PIPE_CONTINUE);
         }
         return null;
+      case '$':
+        buffer.next();
+        return this.lexVariable();
       case '\'':
         buffer.next();
         return this.lexString();
@@ -167,24 +171,70 @@ class Lexer {
     auto token = new Token(TokenType.STRING);
 
     while (!buffer.atEnd()) {
-      char next = this.buffer.next();
-      switch (next) {
+      switch (this.buffer.peek()) {
         case '\n':
           assert(false, "Newline in string");
         case '\'':
+          this.buffer.next();
           return token;
         default:
-          token.string_ ~= next;
+          token.string_ ~= this.buffer.next();
           break;
       }
     }
 
     assert(false, "Failed to find end of string");
   }
+
+  protected Token lexVariable() {
+    auto token = this.lexNumber();
+    token.type = TokenType.VARIABLE;
+    return token;
+  }
+
+  protected Token lexNumber() {
+    auto token = new Token(TokenType.NUMBER);
+    bool decimal;
+    string contents;
+
+    outer: while (!this.buffer.atEnd()) {
+      switch (this.buffer.peek()) {
+        case '0': .. case '9':
+          contents ~= this.buffer.next();
+          break;
+        case '.':
+          assert(!decimal);
+          decimal = true;
+          contents ~= this.buffer.next();
+          break;
+        default:
+          break outer;
+      }
+    }
+
+    token.number_ = contents.to!double;
+    return token;
+  }
+}
+
+void debugTokens(Token[] tokens) {
+  writefln("=== Token Debug ===");
+  foreach (idx, token; tokens) {
+    writefln("  %s -> %s", idx, token.type);
+  }
+  writefln("\n");
 }
 
 unittest {
   import std.stdio : writefln;
+
+  auto tokenTypes = (Token[] tokens) {
+    TokenType[] result;
+    foreach (token; tokens) {
+      result ~= token.type;
+    }
+    return result;
+  };
 
   auto testLex = (string contents) => (new Lexer(contents)).all();
   assert(testLex("echo('hello world')").length == 4);
@@ -199,4 +249,18 @@ unittest {
   assert(parts[2].string_ == "echo");
 
   assert(testLex("'abc' @> toUpper -> echo").length == 5);
+
+  // Variable lexing
+  assert(testLex("$0").length == 1);
+  assert(testLex("test -> $1")[2].number_ == 1.0);
+  assert(testLex("test->$5->test")[2].number_ == 5.0);
+  assert(testLex("test->$5->test")[2].type == TokenType.VARIABLE);
+
+  assert(tokenTypes(testLex("test -> $1 -> test")) == [
+    TokenType.SYMBOL,
+    TokenType.SY_PIPE_PASS,
+    TokenType.VARIABLE,
+    TokenType.SY_PIPE_PASS,
+    TokenType.SYMBOL,
+  ]);
 }

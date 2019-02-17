@@ -12,6 +12,7 @@ enum BCI {
   CALL,  // FUNCTION, ARGS ...
   LOAD_CONST,  // CONST_ID
   ARG,  // INDEX
+  INDEX,  // OBJECT, INDEX
 }
 
 class BCOP {
@@ -41,12 +42,16 @@ class BCStep {
   @property Type returnType() {
     if (step.type == StepType.PASS || step.type == StepType.MAP) {
       if (ops.length) {
-        return ops[$-1].resultType;
+        if (step.type == StepType.MAP) {
+          return ops[$-1].resultType.elementType;
+        } else {
+          return ops[$-1].resultType;
+        }
       }
     } else if (step.type == StepType.STOP) {
       return builtinTypes["void"];
     } else if (step.type == StepType.CONTINUE) {
-      return null;
+      return builtinTypes["void"];
     } else {
       assert(false);
     }
@@ -100,6 +105,8 @@ class BytecodeCompiler {
         return this.compileString(node.string_);
       case ASTNodeType.CALL:
         return this.compileCall(node.call);
+      case ASTNodeType.VARIABLE:
+        return this.compileVariable(node.variable);
       default:
         assert(false);
     }
@@ -131,10 +138,10 @@ class BytecodeCompiler {
     if (this.previousStep !is null) {
       Type previousStepReturnType = this.previousStep.returnType;
 
-      if (this.previousStep.step.type == StepType.MAP) {
-        assert(previousStepReturnType.baseType == BaseType.STREAM);
-        previousStepReturnType = previousStepReturnType.elementType;
-      }
+      /* if (this.previousStep.step.type == StepType.MAP) { */
+      /*   assert(previousStepReturnType.baseType == BaseType.STREAM); */
+      /*   previousStepReturnType = previousStepReturnType.elementType; */
+      /* } */
 
       auto arg0 = this.addOp(BCI.ARG, [0], previousStepReturnType);
       args ~= arg0;
@@ -160,12 +167,28 @@ class BytecodeCompiler {
       }
 
       if (argType != target.argTypes[i]) {
-        writefln("mismatched arguments %s vs %s", argType, target.argTypes[i]);
+        writefln("mismatched arguments %s vs %s (%s)", argType, target.argTypes[i], target.name);
         assert(false);
       }
     }
 
     return this.addOp(BCI.CALL, args, target.returnType);
+  }
+
+  protected BCID compileVariable(ASTNodeVariable variable) {
+    // TODO: should refer to cli args?
+    assert(this.previousStep !is null);
+
+    auto arg0 = this.addOp(BCI.ARG, [0], this.previousStep.returnType);
+    if (variable.index == 0) {
+      return arg0;
+    }
+
+    assert(this.previousStep.returnType.baseType == BaseType.TUPLE);
+    assert(this.previousStep.returnType.fieldTypes.length >= variable.index);
+
+    auto fieldType = this.previousStep.returnType.fieldTypes[variable.index - 1];
+    return this.addOp(BCI.INDEX, [arg0, variable.index - 1], fieldType);
   }
 
   protected BCOP getOp(BCID id) {

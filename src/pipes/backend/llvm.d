@@ -28,7 +28,8 @@ class LLVMCompiler {
 
   this(string programContents) {
     auto lexer = new Lexer(programContents);
-    auto parser = new Parser(lexer);
+
+    auto parser = new Parser(new Lexer(programContents));
     this.bytecodeCompiler = new BytecodeCompiler();
     this.bytecodeCompiler.compile(parser.all());
 
@@ -135,10 +136,14 @@ class LLVMCompiler {
         argTypes ~= convertTypeToLLVM(previousStepReturnType);
       }
 
-      auto returnType = step.returnType ? convertTypeToLLVM(step.returnType) : LLVMVoidType();
+      Type returnType = step.returnType;
+      // LLVMTypeRef returnType = step.returnType ? convertTypeToLLVM(step.returnType) : LLVMVoidType();
+      if (step.step.type == StepType.MAP) {
+        returnType = new Type(BaseType.STREAM, returnType);
+      }
 
       auto func = LLVMAddFunction(this.module_, format("step_%s", step.id).toStringz, LLVMFunctionType(
-        returnType, argTypes.ptr, cast(uint)argTypes.length, false,
+        convertTypeToLLVM(returnType), argTypes.ptr, cast(uint)argTypes.length, false,
       ));
 
       this.stepFunctions[step.id] = func;
@@ -147,9 +152,9 @@ class LLVMCompiler {
       if (step.returnType !is null) {
         previousStepReturnType = step.returnType;
 
-        if (step.step.type == StepType.MAP) {
-          previousStepReturnType = previousStepReturnType.elementType;
-        }
+        /* if (step.step.type == StepType.MAP) { */
+        /*   previousStepReturnType = previousStepReturnType.elementType; */
+        /* } */
       }
 
       auto entry = LLVMAppendBasicBlock(func, "entry");
@@ -213,9 +218,20 @@ class LLVMCompiler {
 
         LLVMValueRef value;
         // TODO: generalize this
-        if (previousStep.returnType.elementType.baseType == BaseType.STRING) {
+        if (previousStep.returnType.baseType == BaseType.STRING) {
           auto streamNextString = this.getBuiltinFunction("stream_next_string");
           value = LLVMBuildCall(this.builder, streamNextString, args.ptr, cast(uint)args.length, "");
+          auto done = LLVMBuildIsNull(this.builder, value, "");
+          LLVMBuildCondBr(this.builder, done, afterBlock, bodyBlock);
+          LLVMPositionBuilderAtEnd(this.builder, bodyBlock);
+
+          // TODO: not exactly sure what this will turn into with multiple maps/reduces/etc
+          continuation = beforeBlock;
+        } else if (previousStep.returnType.baseType == BaseType.TUPLE) {
+          auto streamNextTuple = this.getBuiltinFunction("stream_next_tuple");
+
+          auto valueBox = LLVMBuildCall(this.builder, streamNextTuple, args.ptr, cast(uint)args.length, "");
+          value = LLVMBuildBitCast(this.builder, valueBox, convertTypeToLLVM(previousStep.returnType), "");
           auto done = LLVMBuildIsNull(this.builder, value, "");
           LLVMBuildCondBr(this.builder, done, afterBlock, bodyBlock);
           LLVMPositionBuilderAtEnd(this.builder, bodyBlock);
@@ -254,6 +270,8 @@ class LLVMCompiler {
         return this.compileLoadConst(op);
       case BCI.ARG:
         return this.compileArg(op);
+      case BCI.INDEX:
+        return this.compileIndex(op);
     }
   }
 
@@ -300,9 +318,27 @@ class LLVMCompiler {
   protected LLVMValueRef compileArg(BCOP op) {
     return LLVMGetParam(this.currentStepFunction, cast(uint)op.args[0]);
   }
+
+  protected LLVMValueRef compileIndex(BCOP op) {
+    LLVMValueRef[] indicies = [
+      LLVMConstInt(LLVMIntType(32), 0, false),
+      LLVMConstInt(LLVMIntType(32), op.args[1], false),
+    ];
+
+    auto valueBox = LLVMBuildGEP(
+      this.builder,
+      this.results[op.args[0]],
+      indicies.ptr,
+      cast(uint)indicies.length,
+      "",
+    );
+
+    return LLVMBuildLoad(this.builder, valueBox, "");
+  }
 }
 
 LLVMTypeRef convertTypeToLLVM(Type type) {
+  assert(type);
   switch (type.baseType) {
     case BaseType.VOID:
       return LLVMVoidType();
@@ -323,6 +359,22 @@ LLVMTypeRef convertTypeToLLVM(Type type) {
       return LLVMDoubleType();
     case BaseType.STREAM:
       // TODO: qualify the full struct?
+      return LLVMPointerType(LLVMIntType(8), 0);
+    case BaseType.TUPLE:
+      LLVMTypeRef[] fields = [];
+
+      foreach (fieldType; type.fieldTypes) {
+        fields ~= convertTypeToLLVM(fieldType);
+      }
+
+      auto structType = LLVMStructType(
+        fields.ptr,
+        cast(uint)fields.length,
+        true,
+      );
+
+      return LLVMPointerType(structType, 0);
+    case BaseType.ANY:
       return LLVMPointerType(LLVMIntType(8), 0);
     default:
       assert(false);
