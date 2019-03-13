@@ -3,6 +3,7 @@
   "configurations": [
     {
       "name": "default-linux",
+      "compiler": "ldc2",
       "platforms": ["linux"],
       "targetType": "executable",
       "versions": ["LLVM7"],

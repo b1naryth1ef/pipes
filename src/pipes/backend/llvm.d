@@ -63,6 +63,7 @@ class LLVMCompiler {
     LLVMDisposeMessage(error);
 
     LLVMRunFunctionAsMain(engine, this.main, 0, null, null);
+    LLVMDisposeExecutionEngine(engine);
   }
 
   void writeModule(string outputPath) {
@@ -323,6 +324,9 @@ class LLVMCompiler {
         LLVMConstInt(LLVMIntType(32), 0, false),
       ];
       return LLVMBuildGEP(this.builder, consGlobal, indices.ptr, cast(uint)indices.length, "");
+    } else if (constId in this.bytecodeCompiler.constantNumbers) {
+      auto cons = this.bytecodeCompiler.constantNumbers[constId];
+      return LLVMConstReal(convertTypeToLLVM(op.resultType), cons);
     } else {
       assert(false);
     }

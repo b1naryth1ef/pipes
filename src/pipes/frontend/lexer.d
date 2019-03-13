@@ -95,6 +95,8 @@ class Lexer {
       case 'A': .. case 'Z':
       case 'a': .. case 'z':
         return this.lexSymbol();
+      case '0': .. case '9':
+          return this.lexNumber();
       case '(':
       case ')':
         return new Token(buffer.next() == '(' ? TokenType.SY_LPAREN : TokenType.SY_RPAREN);
@@ -271,14 +273,14 @@ unittest {
     TokenType.SYMBOL,
   ]);
 
-  /* assert(tokenTypes(testLex("lines -> tsv -> takeString(1)")) == [ */
-  /*   TokenType.SYMBOL, */
-  /*   TokenType.SY_PIPE_PASS, */
-  /*   TokenType.SYMBOL, */
-  /*   TokenType.SY_PIPE_PASS, */
-  /*   TokenType.SYMBOL, */
-  /*   TokenType.SY_LPAREN, */
-  /*   TokenType.NUMBER, */
-  /*   TokenType.SY_RPAREN, */
-  /* ]); */
+  assert(tokenTypes(testLex("lines -> tsv -> takeString(1)")) == [
+    TokenType.SYMBOL,
+    TokenType.SY_PIPE_PASS,
+    TokenType.SYMBOL,
+    TokenType.SY_PIPE_PASS,
+    TokenType.SYMBOL,
+    TokenType.SY_LPAREN,
+    TokenType.NUMBER,
+    TokenType.SY_RPAREN,
+  ]);
 }

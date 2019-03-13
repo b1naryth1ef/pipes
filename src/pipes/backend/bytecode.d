@@ -66,6 +66,7 @@ class BytecodeCompiler {
   BCOP[] ops;
   BCID[BuiltinFunction] builtinFunctionIds;
   string[BCID] constantStrings;
+  double[BCID] constantNumbers;
 
   protected BCStep previousStep;
   protected BCStep currentStep;
@@ -82,6 +83,12 @@ class BytecodeCompiler {
     foreach (step; steps) {
       this.compileOne(step);
     }
+  }
+
+  protected BCID addNumberConstant(double cons) {
+    auto id = this.idx++;
+    this.constantNumbers[id] = cons;
+    return id;
   }
 
   protected BCID addStringConstant(string cons) {
@@ -104,6 +111,8 @@ class BytecodeCompiler {
         return this.compileStep(node.step);
       case ASTNodeType.STRING:
         return this.compileString(node.string_);
+      case ASTNodeType.NUMBER:
+        return this.compileNumber(node.number);
       case ASTNodeType.CALL:
         return this.compileCall(node.call);
       case ASTNodeType.VARIABLE:
@@ -126,6 +135,11 @@ class BytecodeCompiler {
   protected BCID compileString(ASTNodeString string_) {
     auto cons =  this.addStringConstant(string_.string_);
     return this.addOp(BCI.LOAD_CONST, [cons], builtinTypes["string"]);
+  }
+
+  protected BCID compileNumber(ASTNodeNumber number) {
+    auto cons = this.addNumberConstant(number.number);
+    return this.addOp(BCI.LOAD_CONST, [cons], builtinTypes["number"]);
   }
 
   protected BCID compileCall(ASTNodeCall call) {

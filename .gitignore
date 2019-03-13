@@ -2,6 +2,8 @@ a.out
 .dub/
 /pipes
 /pipes-test-unittest
+lib/pipeslib-test-unittest
+/core
 test.ir
 test.o
 test.csv

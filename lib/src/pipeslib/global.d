@@ -371,15 +371,17 @@ extern (C) {
     size_t currStart = 0;
     for (size_t idx = 0; idx < next.length; idx++) {
       if (next.start[idx] == '\t') {
-        res.stringData[resIdx] = createPipeString(next.start + currStart, idx-1-currStart);
+        res.stringData[resIdx] = createPipeString(next.start + currStart, idx-currStart);
         resIdx += 1;
         currStart = idx + 1;
       }
     }
 
     if (currStart < next.length) {
-      res.stringData[resIdx] = createPipeString(next.start + currStart, next.length-1-currStart);
+      res.stringData[resIdx] = createPipeString(next.start + currStart, next.length-currStart);
     }
+
+    assert(resIdx == tabCount);
 
     return res;
   }
@@ -392,9 +394,16 @@ extern (C) {
   PipeString* streamTakeStringNextString(Stream* source) {
     auto takeStringStream = cast(TakeStringStream*)source.data;
 
-    auto next = takeStringStream.source.nextArray(takeStringStream.source);
-    if (next is null) {
-      return null;
+    PipeArray* next;
+    while (true) {
+      next = takeStringStream.source.nextArray(takeStringStream.source);
+      if (next is null) {
+        return null;
+      }
+
+      if (next.length > takeStringStream.index) {
+        break;
+      }
     }
 
     assert(next.length > takeStringStream.index);
@@ -402,7 +411,7 @@ extern (C) {
   }
 
   Stream* takeString(Stream* source, PipeNumber index) {
-    assert(source.nextString);
+    assert(source.nextArray);
 
     auto memory = malloc(Stream.sizeof + TakeStringStream.sizeof);
     auto stream = cast(Stream*)memory;
