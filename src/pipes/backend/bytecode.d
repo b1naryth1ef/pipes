@@ -13,6 +13,7 @@ enum BCI {
   LOAD_CONST,  // CONST_ID
   ARG,  // INDEX
   INDEX,  // OBJECT, INDEX
+  INDEX_ARRAY, // ARRAY, INDEX
 }
 
 class BCOP {
@@ -184,11 +185,16 @@ class BytecodeCompiler {
       return arg0;
     }
 
-    assert(this.previousStep.returnType.baseType == BaseType.TUPLE);
-    assert(this.previousStep.returnType.fieldTypes.length >= variable.index);
+    if (this.previousStep.returnType.baseType == BaseType.TUPLE) {
+      assert(this.previousStep.returnType.fieldTypes.length >= variable.index);
+      auto fieldType = this.previousStep.returnType.fieldTypes[variable.index - 1];
+      return this.addOp(BCI.INDEX, [arg0, variable.index - 1], fieldType);
+    } else if (this.previousStep.returnType.baseType == BaseType.ARRAY) {
+      auto fieldType = this.previousStep.returnType.elementType;
+      return this.addOp(BCI.INDEX_ARRAY, [arg0, variable.index - 1], fieldType);
+    }
 
-    auto fieldType = this.previousStep.returnType.fieldTypes[variable.index - 1];
-    return this.addOp(BCI.INDEX, [arg0, variable.index - 1], fieldType);
+    assert(false);
   }
 
   protected BCOP getOp(BCID id) {

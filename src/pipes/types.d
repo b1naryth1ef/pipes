@@ -39,6 +39,12 @@ class Type {
         }
       }
 
+      if (this.baseType == BaseType.ARRAY && otherType.baseType == BaseType.ARRAY) {
+        if (this.elementType is null || otherType.elementType is null) {
+          return true;
+        }
+      }
+
       if (this.baseType == BaseType.ANY || otherType.baseType == BaseType.ANY) {
         return true;
       }

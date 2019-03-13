@@ -30,6 +30,11 @@ extern (C) {
     PipeTuple* function(Stream*) nextTuple;
 
     /**
+      Returns the next array in the stream, or null if no further entires exist.
+    */
+    PipeArray* function(Stream*) nextArray;
+
+    /**
       Copies the next double in the stream to the given memory location. If no
        further entries exist, this function returns false and will not copy any
        value into the passed memory location.
@@ -43,6 +48,10 @@ extern (C) {
 
   PipeTuple* stream_next_tuple(Stream* stream) {
     return stream.nextTuple(stream);
+  }
+
+  PipeArray* stream_next_array(Stream* stream) {
+    return stream.nextArray(stream);
   }
 
   bool stream_next_number(Stream* stream, PipeNumber* result) {
@@ -300,6 +309,113 @@ extern (C) {
 
     return sum;
   }
+
+  struct PipeArray {
+    ulong length;
+    void* data;
+
+    @property PipeString** stringData() {
+      return cast(PipeString**)this.data;
+    }
+  }
+
+  PipeArray* createPipeArray(uint length) {
+    auto arr = cast(PipeArray*)malloc(PipeArray.sizeof + ((void*).sizeof * length));
+    arr.data = cast(void*)arr + PipeArray.sizeof;
+    arr.length = length;
+    return arr;
+  }
+
+  PipeNumber arrayLength(PipeArray* arr) {
+    return cast(double)arr.length;
+  }
+
+  PipeString* arrayFirstString(PipeArray* arr) {
+    assert(arr.length >= 1);
+    return cast(PipeString*)arr.stringData[0];
+  }
+
+  Stream* tsv(Stream* source) {
+    auto stream = cast(Stream*)malloc(Stream.sizeof);
+    stream.data = cast(void*)source;
+    stream.nextArray = &streamTSVNextArray;
+    return stream;
+  }
+
+  PipeString* createPipeString(immutable(char)* data, size_t length) {
+    auto str = cast(PipeString*)malloc(PipeString.sizeof);
+    str.start = data;
+    str.length = length;
+    return str;
+  }
+
+  PipeArray* streamTSVNextArray(Stream* stream) {
+    auto source = cast(Stream*)stream.data;
+
+    auto next = source.nextString(source);
+    if (next is null) {
+      return null;
+    }
+
+    // Blech
+    size_t tabCount = 0;
+    for (size_t idx = 0; idx < next.length; idx++) {
+      if (next.start[idx] == '\t') {
+        tabCount += 1;
+      }
+    }
+
+    auto res = createPipeArray(cast(uint)(tabCount + 1));
+
+    size_t resIdx = 0;
+    size_t currStart = 0;
+    for (size_t idx = 0; idx < next.length; idx++) {
+      if (next.start[idx] == '\t') {
+        res.stringData[resIdx] = createPipeString(next.start + currStart, idx-1-currStart);
+        resIdx += 1;
+        currStart = idx + 1;
+      }
+    }
+
+    if (currStart < next.length) {
+      res.stringData[resIdx] = createPipeString(next.start + currStart, next.length-1-currStart);
+    }
+
+    return res;
+  }
+
+  struct TakeStringStream {
+    Stream* source;
+    size_t index;
+  }
+
+  PipeString* streamTakeStringNextString(Stream* source) {
+    auto takeStringStream = cast(TakeStringStream*)source.data;
+
+    auto next = takeStringStream.source.nextArray(takeStringStream.source);
+    if (next is null) {
+      return null;
+    }
+
+    assert(next.length > takeStringStream.index);
+    return next.stringData[takeStringStream.index];
+  }
+
+  Stream* takeString(Stream* source, PipeNumber index) {
+    assert(source.nextString);
+
+    auto memory = malloc(Stream.sizeof + TakeStringStream.sizeof);
+    auto stream = cast(Stream*)memory;
+    auto takeStringStream = cast(TakeStringStream*)&memory[Stream.sizeof];
+
+    takeStringStream.source = source;
+    takeStringStream.index = cast(size_t)index;
+
+    stream.data = cast(void*)takeStringStream;
+    stream.nextString = &streamTakeStringNextString;
+    return stream;
+  }
+
 }
 
 
@@ -310,4 +426,7 @@ unittest {
   PipeNumber a = 1.0;
   PipeNumber b = 2.0;
   auto tuple = createPipeTuple(a, b);
+
+  import std.stdio;
+  writefln("%s", PipeNumber.sizeof);
 }

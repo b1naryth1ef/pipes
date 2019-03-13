@@ -5,15 +5,18 @@
     {
       "name": "static",
       "dflags": ["-betterC"],
-      "targetType": "staticLibrary"
+      "targetType": "staticLibrary",
+      "libs": ["pcre2-8"]
     },
     {
       "name": "dynamic",
       "dflags": ["-betterC"],
-      "targetType": "dynamicLibrary"
+      "targetType": "dynamicLibrary",
+      "libs": ["pcre2-8"]
     },
     {
-      "name": "unittest"
+      "name": "unittest",
+      "libs": ["pcre2-8"]
     }
   ]
 }

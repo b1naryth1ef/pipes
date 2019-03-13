@@ -12,6 +12,10 @@ class StringBuffer {
     this.idx = -1;
   }
 
+  string rest() {
+    return this.contents[idx..this.contents.length];
+  }
+
   char peek(size_t amount = 1) {
     assert(!this.atEnd(amount), "Overflow when peeking from string buffer");
     return this.contents[this.idx + amount];
@@ -118,7 +122,7 @@ class Lexer {
           return new Token(TokenType.SY_PIPE_CONTINUE);
         }
         return null;
-      case '$':
+      case '^':
         buffer.next();
         return this.lexVariable();
       case '\'':
@@ -143,6 +147,9 @@ class Lexer {
       token = this.next();
     }
 
+    if (!this.buffer.atEnd()) {
+      writefln("extra: '%s'", this.buffer.rest());
+    }
     assert(this.buffer.atEnd(), "Extra characters left at end of buffer?");
     return result;
   }
@@ -251,16 +258,27 @@ unittest {
   assert(testLex("'abc' @> toUpper -> echo").length == 5);
 
   // Variable lexing
-  assert(testLex("$0").length == 1);
-  assert(testLex("test -> $1")[2].number_ == 1.0);
-  assert(testLex("test->$5->test")[2].number_ == 5.0);
-  assert(testLex("test->$5->test")[2].type == TokenType.VARIABLE);
+  assert(testLex("^0").length == 1);
+  assert(testLex("test -> ^1")[2].number_ == 1.0);
+  assert(testLex("test->^5->test")[2].number_ == 5.0);
+  assert(testLex("test->^5->test")[2].type == TokenType.VARIABLE);
 
-  assert(tokenTypes(testLex("test -> $1 -> test")) == [
+  assert(tokenTypes(testLex("test -> ^1 -> test")) == [
     TokenType.SYMBOL,
     TokenType.SY_PIPE_PASS,
     TokenType.VARIABLE,
     TokenType.SY_PIPE_PASS,
     TokenType.SYMBOL,
   ]);
+
+  /* assert(tokenTypes(testLex("lines -> tsv -> takeString(1)")) == [ */
+  /*   TokenType.SYMBOL, */
+  /*   TokenType.SY_PIPE_PASS, */
+  /*   TokenType.SYMBOL, */
+  /*   TokenType.SY_PIPE_PASS, */
+  /*   TokenType.SYMBOL, */
+  /*   TokenType.SY_LPAREN, */
+  /*   TokenType.NUMBER, */
+  /*   TokenType.SY_RPAREN, */
+  /* ]); */
 }

@@ -238,6 +238,17 @@ class LLVMCompiler {
 
           // TODO: not exactly sure what this will turn into with multiple maps/reduces/etc
           continuation = beforeBlock;
+        } else if (previousStep.returnType.baseType == BaseType.ARRAY) {
+          auto streamNextArray = this.getBuiltinFunction("stream_next_array");
+
+          auto valueBox = LLVMBuildCall(this.builder, streamNextArray, args.ptr, cast(uint)args.length, "");
+          value = LLVMBuildBitCast(this.builder, valueBox, convertTypeToLLVM(previousStep.returnType), "");
+          auto done = LLVMBuildIsNull(this.builder, value, "");
+          LLVMBuildCondBr(this.builder, done, afterBlock, bodyBlock);
+          LLVMPositionBuilderAtEnd(this.builder, bodyBlock);
+
+          // TODO: not exactly sure what this will turn into with multiple maps/reduces/etc
+          continuation = beforeBlock;
         } else {
           assert(false);
         }
@@ -272,6 +283,8 @@ class LLVMCompiler {
         return this.compileArg(op);
       case BCI.INDEX:
         return this.compileIndex(op);
+      case BCI.INDEX_ARRAY:
+        return this.compileIndexArray(op);
     }
   }
 
@@ -320,6 +333,8 @@ class LLVMCompiler {
   }
 
   protected LLVMValueRef compileIndex(BCOP op) {
+    LLVMDumpValue(this.results[op.args[0]]);
+
     LLVMValueRef[] indicies = [
       LLVMConstInt(LLVMIntType(32), 0, false),
       LLVMConstInt(LLVMIntType(32), op.args[1], false),
@@ -331,6 +346,37 @@ class LLVMCompiler {
       indicies.ptr,
       cast(uint)indicies.length,
       "",
+    );
+
+    return LLVMBuildLoad(this.builder, valueBox, "");
+  }
+
+  protected LLVMValueRef compileIndexArray(BCOP op) {
+    LLVMValueRef[] indicies = [
+      LLVMConstInt(LLVMIntType(32), 0, false),
+      LLVMConstInt(LLVMIntType(32), 1, false),
+    ];
+
+    auto ptrValue = LLVMBuildGEP(
+      this.builder,
+      this.results[op.args[0]],
+      indicies.ptr,
+      cast(uint)indicies.length,
+      ""
+    );
+
+    auto ptrValueLoaded = LLVMBuildLoad(this.builder, ptrValue, "");
+
+    LLVMValueRef[] indicies2 = [
+      LLVMConstInt(LLVMIntType(32), op.args[1], false),
+    ];
+
+    auto valueBox = LLVMBuildGEP(
+      this.builder,
+      ptrValueLoaded,
+      indicies2.ptr,
+      cast(uint)indicies2.length,
+      ""
     );
 
     return LLVMBuildLoad(this.builder, valueBox, "");
@@ -376,6 +422,18 @@ LLVMTypeRef convertTypeToLLVM(Type type) {
       return LLVMPointerType(structType, 0);
     case BaseType.ANY:
       return LLVMPointerType(LLVMIntType(8), 0);
+    case BaseType.ARRAY:
+      LLVMTypeRef elementType;
+      if (type.elementType) {
+        elementType = LLVMPointerType(convertTypeToLLVM(type.elementType), 0);
+      } else {
+        elementType = LLVMPointerType(LLVMIntType(8), 0);
+      }
+
+      LLVMTypeRef[] fields = [LLVMIntType(64), elementType];
+
+      auto structType = LLVMStructType(fields.ptr, cast(uint)fields.length, true);
+      return LLVMPointerType(structType, 0);
     default:
       assert(false);
   }

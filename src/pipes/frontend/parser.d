@@ -73,6 +73,10 @@ class Parser {
         auto node = new ASTNode(ASTNodeType.STRING);
         node.string_.string_ = token.string_;
         return node;
+      case TokenType.NUMBER:
+        auto node = new ASTNode(ASTNodeType.NUMBER);
+        node.number.number = token.number_;
+        return node;
       case TokenType.VARIABLE:
         auto node = new ASTNode(ASTNodeType.VARIABLE);
         node.variable.index = cast(long)token.number_;
@@ -89,10 +93,12 @@ class Parser {
 
     if (this.lexer.peek() && this.lexer.peek().type == TokenType.SY_LPAREN) {
       this.lexer.next();
+
       while (this.lexer.peek() && this.lexer.peek().type != TokenType.SY_RPAREN) {
         node.call.args ~= this.readExpression();
       }
 
+      assert(this.lexer.peek());
       assert(this.lexer.next().type == TokenType.SY_RPAREN);
     }
 
@@ -169,7 +175,7 @@ unittest {
   assert(tree[1].type == ASTNodeType.STEP);
   assert(tree[1].step.type == StepType.STOP);
 
-  tree = testParse("$55 -> echo");
+  tree = testParse("^55 -> echo");
   assert(tree.length == 2);
   assert(tree[0].type == ASTNodeType.STEP);
   assert(tree[0].step.expr.type == ASTNodeType.VARIABLE);
