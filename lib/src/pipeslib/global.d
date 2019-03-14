@@ -94,7 +94,7 @@ extern (C) {
     return newString;
   }
 
-  PipeNumber sum(PipeNumber a, PipeNumber b) {
+  PipeNumber sumNumber(PipeNumber a, PipeNumber b) {
     return a + b;
   }
 
@@ -113,7 +113,7 @@ extern (C) {
     return newString;
   }
 
-  PipeNumber length(Stream* stream) {
+  PipeNumber streamLength(Stream* stream) {
     size_t length = 0;
 
     if (stream.nextString !is null) {

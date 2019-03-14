@@ -41,7 +41,7 @@ class LLVMCompiler {
 
   LLVMValueRef getBuiltinFunction(string name) {
     foreach (builtin, id; this.bytecodeCompiler.builtinFunctionIds) {
-      if (builtin.name == name) {
+      if (builtin.symbolName == name) {
         return this.functions[id];
       }
     }
@@ -120,13 +120,13 @@ class LLVMCompiler {
       }
 
       auto type = LLVMFunctionType(
-        convertTypeToLLVM(func.returnType),
+        convertTypeToLLVM(func._returnType),
         argTypes.ptr,
         cast(uint)argTypes.length,
         false,
       );
 
-      this.functions[id] = LLVMAddFunction(this.module_, toStringz(func.name), type);
+      this.functions[id] = LLVMAddFunction(this.module_, toStringz(func.symbolName), type);
     }
 
     Type previousStepReturnType = null;

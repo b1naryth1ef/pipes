@@ -74,8 +74,10 @@ class BytecodeCompiler {
   protected BCID stepIdx = 1;
 
   this() {
-    foreach (builtin; builtinFunctions.values) {
-      this.builtinFunctionIds[builtin] = this.idx++;
+    foreach (funcs; builtinFunctions.values) {
+      foreach (builtin; funcs) {
+        this.builtinFunctionIds[builtin] = this.idx++;
+      }
     }
   }
 
@@ -142,13 +144,24 @@ class BytecodeCompiler {
     return this.addOp(BCI.LOAD_CONST, [cons], builtinTypes["number"]);
   }
 
+  protected Type getType(BCID id) {
+    if (id in this.constantStrings) {
+      return builtinTypes["string"];
+    } else if (id in this.constantNumbers) {
+      return builtinTypes["number"];
+    } else {
+      auto op = this.getOp(id);
+      assert(op);
+      return op.resultType;
+    }
+  }
+
   protected BCID compileCall(ASTNodeCall call) {
     BCID[] args;
+    Type[] argTypes;
 
-    assert(call.target in builtinFunctions);
-    auto target = builtinFunctions[call.target];
-
-    args ~= this.builtinFunctionIds[target];
+    // Placeholder
+    args ~= -1;
 
     if (this.previousStep !is null) {
       Type previousStepReturnType = this.previousStep.returnType;
@@ -160,34 +173,43 @@ class BytecodeCompiler {
 
       auto arg0 = this.addOp(BCI.ARG, [0], previousStepReturnType);
       args ~= arg0;
+      argTypes ~= this.getType(arg0);
     }
 
     foreach (arg; call.args) {
-      args ~= this.compileOne(arg);
+      auto argId = this.compileOne(arg);
+      args ~= argId;
+      argTypes ~= this.getType(argId);
     }
 
-    if (args.length - 1 != target.argTypes.length) {
-      writefln("mismatched arguments count %s vs %s (%s)", args.length - 1, target.argTypes.length, target.name);
+    BuiltinFunction func;
+    assert(call.target in builtinFunctions);
+    outer: foreach (target; builtinFunctions[call.target]) {
+      if (argTypes.length != target.argTypes.length) {
+        continue;
+      }
+
+      foreach (idx, argType; argTypes) {
+        if (argType != target.argTypes[idx]) {
+          continue outer;
+        }
+      }
+
+      func = target;
+    }
+
+    if (func is null) {
+      writefln(
+        "failed to find function matching signature: %s (%s)",
+        call.target,
+        dumpTypesToString(argTypes),
+      );
       assert(false);
     }
 
-    Type argType;
-    foreach (i, arg; args[1..$]) {
-      if (arg in this.constantStrings) {
-        argType = builtinTypes["string"];
-      } else {
-        auto op = this.getOp(arg);
-        assert(op);
-        argType = op.resultType;
-      }
+    args[0] = this.builtinFunctionIds[func];
 
-      if (argType != target.argTypes[i]) {
-        writefln("mismatched arguments %s vs %s (%s)", argType, target.argTypes[i], target.name);
-        assert(false);
-      }
-    }
-
-    return this.addOp(BCI.CALL, args, target.returnType);
+    return this.addOp(BCI.CALL, args, func.getReturnType(argTypes));
   }
 
   protected BCID compileVariable(ASTNodeVariable variable) {

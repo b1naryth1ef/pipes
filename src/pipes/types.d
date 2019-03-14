@@ -67,6 +67,17 @@ class Type {
   }
 }
 
+string dumpTypesToString(Type[] types) {
+  string output;
+  foreach (type; types) {
+    output ~= type.toString() ~ ", ";
+  }
+  if (!types.length) {
+    return "";
+  }
+  return output[0..$-2];
+}
+
 __gshared Type[string] builtinTypes;
 
 static this() {
