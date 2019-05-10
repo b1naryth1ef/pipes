@@ -34,6 +34,10 @@ class StringBuffer {
     return this.contents[preidx + 1..preidx+amount];
   }
 
+  string leftovers() {
+    return this.contents[this.idx..$];
+  }
+
   bool atEnd(size_t amount = 1) {
     return this.idx + amount >= this.contents.length;
   }
@@ -53,6 +57,7 @@ enum TokenType {
 
   SY_LPAREN,
   SY_RPAREN,
+  SY_COMMA,
 }
 
 class Token {
@@ -63,8 +68,11 @@ class Token {
   }
 
   union {
-    string string_;
-    double number_;
+    struct {
+      string string_;
+      bool format = false;
+    };
+    double number;
   }
 }
 
@@ -96,10 +104,13 @@ class Lexer {
       case 'a': .. case 'z':
         return this.lexSymbol();
       case '0': .. case '9':
-          return this.lexNumber();
+        return this.lexNumber();
       case '(':
       case ')':
         return new Token(buffer.next() == '(' ? TokenType.SY_LPAREN : TokenType.SY_RPAREN);
+      case ',':
+        buffer.next();
+        return new Token(TokenType.SY_COMMA);
       case '@':
         if (buffer.peek(2) == '>') {
           buffer.consume(2);
@@ -136,7 +147,8 @@ class Lexer {
         buffer.next();
         return this.next();
       default:
-        return null;
+        writefln("WARNING: unhandled token `%c`", buffer.peek());
+        assert(false);
     }
   }
 
@@ -221,7 +233,7 @@ class Lexer {
       }
     }
 
-    token.number_ = contents.to!double;
+    token.number = contents.to!double;
     return token;
   }
 }

@@ -99,6 +99,12 @@ class BytecodeCompiler {
     return id;
   }
 
+  protected BCID addNumberConstant(double cons) {
+    auto id = this.idx++;
+    this.constantNumbers[id] = cons;
+    return id;
+  }
+
   protected BCID addOp(BCI op, BCID[] args, Type resultType = null) {
     assert(this.currentStep);
     auto res = new BCOP(this.idx++, op, args, resultType);
@@ -120,6 +126,7 @@ class BytecodeCompiler {
       case ASTNodeType.VARIABLE:
         return this.compileVariable(node.variable);
       default:
+        writefln("Error: unexpected AST node %s", node.type);
         assert(false);
     }
   }
@@ -135,7 +142,7 @@ class BytecodeCompiler {
   }
 
   protected BCID compileString(ASTNodeString string_) {
-    auto cons =  this.addStringConstant(string_.string_);
+    auto cons = this.addStringConstant(string_.string_);
     return this.addOp(BCI.LOAD_CONST, [cons], builtinTypes["string"]);
   }
 

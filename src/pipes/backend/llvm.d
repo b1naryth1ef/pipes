@@ -326,7 +326,7 @@ class LLVMCompiler {
       return LLVMBuildGEP(this.builder, consGlobal, indices.ptr, cast(uint)indices.length, "");
     } else if (constId in this.bytecodeCompiler.constantNumbers) {
       auto cons = this.bytecodeCompiler.constantNumbers[constId];
-      return LLVMConstReal(convertTypeToLLVM(op.resultType), cons);
+      return LLVMConstReal(LLVMDoubleType(), cons);
     } else {
       assert(false);
     }

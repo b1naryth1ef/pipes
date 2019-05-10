@@ -75,11 +75,11 @@ class Parser {
         return node;
       case TokenType.NUMBER:
         auto node = new ASTNode(ASTNodeType.NUMBER);
-        node.number.number = token.number_;
+        node.number.number = token.number;
         return node;
       case TokenType.VARIABLE:
         auto node = new ASTNode(ASTNodeType.VARIABLE);
-        node.variable.index = cast(long)token.number_;
+        node.variable.index = cast(long)token.number;
         return node;
       default:
         writefln("Unhandled token type: %s", token.type);
@@ -94,12 +94,20 @@ class Parser {
     if (this.lexer.peek() && this.lexer.peek().type == TokenType.SY_LPAREN) {
       this.lexer.next();
 
-      while (this.lexer.peek() && this.lexer.peek().type != TokenType.SY_RPAREN) {
+      while (true) {
         node.call.args ~= this.readExpression();
-      }
 
-      assert(this.lexer.peek());
-      assert(this.lexer.next().type == TokenType.SY_RPAREN);
+        if (this.lexer.peek()) {
+          if (this.lexer.peek().type == TokenType.SY_RPAREN) {
+            break;
+          } else if (this.lexer.peek().type == TokenType.SY_COMMA) {
+            this.lexer.next();
+            assert(this.lexer.peek() !is null);
+          }
+        }
+      }
+      auto next = this.lexer.next();
+      assert(next && next.type == TokenType.SY_RPAREN);
     }
 
     return node;
