@@ -66,6 +66,23 @@ class LLVMCompiler {
     LLVMDisposeExecutionEngine(engine);
   }
 
+  LLVMGenericValueRef runStep(BCID stepId) {
+    char* error;
+    LLVMVerifyModule(this.module_, LLVMAbortProcessAction, &error);
+    LLVMDisposeMessage(error);
+
+    LLVMExecutionEngineRef engine;
+    LLVMLinkInMCJIT();
+    LLVMInitializeNativeTarget();
+    LLVMLoadLibraryPermanently("lib/libpipes.so");
+    if (LLVMCreateExecutionEngineForModule(&engine, this.module_, &error) != 0) {
+      assert(false);
+    }
+    LLVMDisposeMessage(error);
+
+    return LLVMRunFunction(engine, this.stepFunctions[stepId], 0, null);
+  }
+
   void writeModule(string outputPath) {
     LLVMPrintModuleToFile(this.module_, toStringz(outputPath), null);
   }
@@ -448,4 +465,16 @@ unittest {
   compiler.compile();
   compiler.writeModule("test.ir");
   compiler.writeObject("test.o");
+
+
+  auto withCompiler = (string program) {
+    auto compiler = new LLVMCompiler(program);
+    compiler.compile();
+    return compiler;
+  };
+
+  compiler = withCompiler("sum(1, 2)");
+  auto res = compiler.runStep(compiler.bytecodeCompiler.steps[0].id);
+  assert(LLVMGenericValueToFloat(LLVMDoubleType(), res) == 3);
+  LLVMDisposeGenericValue(res);
 }

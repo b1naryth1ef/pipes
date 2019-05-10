@@ -41,20 +41,12 @@ class BCStep {
   }
 
   @property Type returnType() {
-    if (step.type == StepType.PASS || step.type == StepType.MAP) {
-      if (ops.length) {
-        if (step.type == StepType.MAP) {
-          return ops[$-1].resultType.elementType;
-        } else {
-          return ops[$-1].resultType;
-        }
+    if (ops.length) {
+      if (step.type == StepType.MAP) {
+        return ops[$-1].resultType.elementType;
+      } else {
+        return ops[$-1].resultType;
       }
-    } else if (step.type == StepType.STOP) {
-      return builtinTypes["void"];
-    } else if (step.type == StepType.CONTINUE) {
-      return builtinTypes["void"];
-    } else {
-      assert(false);
     }
 
     return builtinTypes["void"];
