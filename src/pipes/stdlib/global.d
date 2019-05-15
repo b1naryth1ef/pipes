@@ -30,7 +30,6 @@ static this() {
   // Regex
   registerBuiltinFunction("re", [builtinTypes["string"], builtinTypes["string"]], stringArray);
   registerBuiltinFunction("re", [stringStream, builtinTypes["string"]], stringArrayStream, "reStream");
-
   // Inputs
   registerBuiltinFunction("lines", [], stringStream);
 
@@ -47,6 +46,7 @@ static this() {
   registerBuiltinFunction("arrayFirstString", [stringArray], builtinTypes["string"]);
   registerBuiltinFunction("takeString", [stringArrayStream, builtinTypes["number"]], stringStream);
   registerBuiltinFunction("tsv", [stringStream], stringArrayStream);
+
   // TODO:
   //  1. Support "generics" wherein we take a stream/array and return the type of its element
   //  2. Support specification based on argument types (array/stream are interchangeable)

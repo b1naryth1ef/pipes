@@ -12,6 +12,10 @@ class StringBuffer {
     this.idx = -1;
   }
 
+  @property size_t pos() {
+    return this.idx;
+  }
+
   string rest() {
     return this.contents[idx..this.contents.length];
   }
@@ -60,12 +64,14 @@ enum TokenType {
   SY_COMMA,
 }
 
+struct SourceLocation {
+  size_t charStart;
+  size_t charEnd;
+}
+
 class Token {
   TokenType type;
-
-  this(TokenType type) {
-    this.type = type;
-  }
+  SourceLocation loc;
 
   union {
     struct {
@@ -73,6 +79,16 @@ class Token {
       bool format = false;
     };
     double number;
+  }
+
+  this(TokenType type, size_t charStart = -1) {
+    this.type = type;
+    this.loc.charStart = charStart;
+  }
+
+  Token withEnd(size_t charEnd) {
+    this.loc.charEnd = charEnd;
+    return this;
   }
 }
 
@@ -169,7 +185,7 @@ class Lexer {
   }
 
   protected Token lexSymbol() {
-    auto token = new Token(TokenType.SYMBOL);
+    auto token = new Token(TokenType.SYMBOL, this.buffer.pos);
 
     outer: while (!this.buffer.atEnd()) {
       switch (this.buffer.peek()) {
@@ -185,11 +201,11 @@ class Lexer {
     }
 
     // TODO: check for keyword
-    return token;
+    return token.withEnd(this.buffer.pos);
   }
 
   protected Token lexString() {
-    auto token = new Token(TokenType.STRING);
+    auto token = new Token(TokenType.STRING, this.buffer.pos);
 
     while (!buffer.atEnd()) {
       switch (this.buffer.peek()) {
@@ -197,7 +213,7 @@ class Lexer {
           assert(false, "Newline in string");
         case '\'':
           this.buffer.next();
-          return token;
+          return token.withEnd(this.buffer.pos);
         default:
           token.string_ ~= this.buffer.next();
           break;
@@ -214,7 +230,7 @@ class Lexer {
   }
 
   protected Token lexNumber() {
-    auto token = new Token(TokenType.NUMBER);
+    auto token = new Token(TokenType.NUMBER, this.buffer.pos);
     bool decimal;
     string contents;
 
@@ -234,7 +250,7 @@ class Lexer {
     }
 
     token.number = contents.to!double;
-    return token;
+    return token.withEnd(this.buffer.pos);
   }
 }
 

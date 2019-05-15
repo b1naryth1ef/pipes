@@ -1,6 +1,6 @@
 module pipes.frontend.parser;
 
-import pipes.frontend.lexer : Lexer, TokenType;
+import pipes.frontend.lexer : Lexer, TokenType, SourceLocation, Token;
 
 import std.stdio : writefln;
 
@@ -68,17 +68,17 @@ class Parser {
 
     switch (token.type) {
       case TokenType.SYMBOL:
-        return parseCall(token.string_);
+        return parseCall(token);
       case TokenType.STRING:
-        auto node = new ASTNode(ASTNodeType.STRING);
+        auto node = new ASTNode(ASTNodeType.STRING, &token.loc);
         node.string_.string_ = token.string_;
         return node;
       case TokenType.NUMBER:
-        auto node = new ASTNode(ASTNodeType.NUMBER);
+        auto node = new ASTNode(ASTNodeType.NUMBER, &token.loc);
         node.number.number = token.number;
         return node;
       case TokenType.VARIABLE:
-        auto node = new ASTNode(ASTNodeType.VARIABLE);
+        auto node = new ASTNode(ASTNodeType.VARIABLE, &token.loc);
         node.variable.index = cast(long)token.number;
         return node;
       default:
@@ -87,9 +87,9 @@ class Parser {
     }
   }
 
-  protected ASTNode parseCall(string target) {
-    auto node = new ASTNode(ASTNodeType.CALL);
-    node.call.target = target;
+  protected ASTNode parseCall(Token target) {
+    auto node = new ASTNode(ASTNodeType.CALL, &target.loc);
+    node.call.target = target.string_;
 
     if (this.lexer.peek() && this.lexer.peek().type == TokenType.SY_LPAREN) {
       this.lexer.next();
@@ -117,9 +117,7 @@ class Parser {
 class ASTNode {
   ASTNodeType type;
 
-  this(ASTNodeType type) {
-    this.type = type;
-  }
+  SourceLocation loc;
 
   union {
     ASTNodeStep step;
@@ -127,6 +125,13 @@ class ASTNode {
     ASTNodeNumber number;
     ASTNodeVariable variable;
     ASTNodeCall call;
+  }
+
+  this(ASTNodeType type, SourceLocation* loc = null) {
+    this.type = type;
+    if (loc) {
+      this.loc = *loc;
+    }
   }
 }
 
