@@ -67,10 +67,6 @@ extern (C) {
   struct PipeString {
     ulong length;
     immutable(char)* start;
-
-    static PipeString fromString(string source) {
-      return PipeString(source.length, &source[0]);
-    }
   }
 
   void echo(PipeString* str) {
@@ -429,7 +425,11 @@ extern (C) {
 
 
 unittest {
-  auto str = PipeString.fromString("test");
+  PipeString fromString(string source) {
+    return PipeString(source.length, &source[0]);
+  }
+
+  auto str = fromString("test");
   echo(&str);
 
   PipeNumber a = 1.0;
