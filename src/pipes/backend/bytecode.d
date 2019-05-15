@@ -14,6 +14,7 @@ enum BCI {
   ARG,  // INDEX
   INDEX,  // OBJECT, INDEX
   INDEX_ARRAY, // ARRAY, INDEX
+  SUM, // LEFT, RIGHT
 }
 
 class BCOP {
@@ -79,12 +80,6 @@ class BytecodeCompiler {
     }
   }
 
-  protected BCID addNumberConstant(double cons) {
-    auto id = this.idx++;
-    this.constantNumbers[id] = cons;
-    return id;
-  }
-
   protected BCID addStringConstant(string cons) {
     auto id = this.idx++;
     this.constantStrings[id] = cons;
@@ -97,7 +92,7 @@ class BytecodeCompiler {
     return id;
   }
 
-  protected BCID addOp(BCI op, BCID[] args, Type resultType = null) {
+  BCID addOp(BCI op, BCID[] args, Type resultType = null) {
     assert(this.currentStep);
     auto res = new BCOP(this.idx++, op, args, resultType);
     this.currentStep.ops ~= res;
@@ -204,6 +199,10 @@ class BytecodeCompiler {
         dumpTypesToString(argTypes),
       );
       assert(false);
+    }
+
+    if (func.isIntrinsic) {
+      return func.intrinsicGenFn(this, args[1..$]);
     }
 
     args[0] = this.builtinFunctionIds[func];

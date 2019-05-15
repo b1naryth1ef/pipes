@@ -303,11 +303,15 @@ class LLVMCompiler {
         return this.compileIndex(op);
       case BCI.INDEX_ARRAY:
         return this.compileIndexArray(op);
+      case BCI.SUM:
+        return this.compileSum(op);
     }
   }
 
   protected LLVMValueRef compileCall(BCOP op) {
     BCID targetId = op.args[0];
+    auto target = this.functions[targetId];
+
     BCID[] argIds = op.args.length > 1 ? op.args[1..$] : [];
     LLVMValueRef[] args;
 
@@ -401,6 +405,10 @@ class LLVMCompiler {
     );
 
     return LLVMBuildLoad(this.builder, valueBox, "");
+  }
+
+  protected LLVMValueRef compileSum(BCOP op) {
+    return LLVMBuildFAdd(this.builder, this.results[op.args[0]], this.results[op.args[1]], "");
   }
 }
 

@@ -273,8 +273,8 @@ unittest {
 
   // Variable lexing
   assert(testLex("^0").length == 1);
-  assert(testLex("test -> ^1")[2].number_ == 1.0);
-  assert(testLex("test->^5->test")[2].number_ == 5.0);
+  assert(testLex("test -> ^1")[2].number == 1.0);
+  assert(testLex("test->^5->test")[2].number == 5.0);
   assert(testLex("test->^5->test")[2].type == TokenType.VARIABLE);
 
   assert(tokenTypes(testLex("test -> ^1 -> test")) == [

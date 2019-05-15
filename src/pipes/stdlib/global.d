@@ -1,7 +1,8 @@
 module pipes.stdlib.global;
 
 import pipes.types;
-import pipes.stdlib.meta : registerBuiltinFunction;
+import pipes.stdlib.meta : registerBuiltinFunction, registerBuiltinIntrinsic;
+import pipes.backend.bytecode : BCI;
 
 static this() {
   auto anyStream = new Type(BaseType.STREAM);
@@ -17,7 +18,9 @@ static this() {
   registerBuiltinFunction("length", [anyStream], builtinTypes["number"], "streamLength");
   registerBuiltinFunction("length", [anyArray], builtinTypes["number"], "arrayLength");
 
-  registerBuiltinFunction("sum", [builtinTypes["number"], builtinTypes["number"]], builtinTypes["number"], "sumNumber");
+  registerBuiltinIntrinsic("sum", [builtinTypes["number"], builtinTypes["number"]], builtinTypes["number"], (bc, args) {
+    return bc.addOp(BCI.SUM, args, builtinTypes["number"]);
+  });
   registerBuiltinFunction("sum", [numberStream], builtinTypes["number"], "sumStream");
 
   // String Specific
