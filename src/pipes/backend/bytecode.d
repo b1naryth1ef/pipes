@@ -61,6 +61,7 @@ class BytecodeCompiler {
   string[BCID] constantStrings;
   double[BCID] constantNumbers;
 
+  protected ASTNode currentNode;
   protected BCStep previousStep;
   protected BCStep currentStep;
   protected BCID idx = 1;
@@ -78,6 +79,12 @@ class BytecodeCompiler {
     foreach (step; steps) {
       this.compileOne(step);
     }
+  }
+
+  Throwable reportError(Args...)(string fmt, Args args) {
+    writefln("\n");
+    writefln(fmt, args);
+    return new Exception("Unhandled error in bytecode compiler");
   }
 
   protected BCID addStringConstant(string cons) {
@@ -101,6 +108,8 @@ class BytecodeCompiler {
   }
 
   protected BCID compileOne(ASTNode node) {
+    this.currentNode = node;
+
     switch (node.type) {
       case ASTNodeType.STEP:
         return this.compileStep(node.step);
@@ -177,6 +186,11 @@ class BytecodeCompiler {
     }
 
     BuiltinFunction func;
+
+    if (call.target !in builtinFunctions) {
+      throw this.reportError("'%s' is not a registered builtin function", call.target);
+    }
+
     assert(call.target in builtinFunctions);
     outer: foreach (target; builtinFunctions[call.target]) {
       if (argTypes.length != target.argTypes.length) {
