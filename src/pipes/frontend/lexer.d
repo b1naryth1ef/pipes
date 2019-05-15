@@ -192,6 +192,7 @@ class Lexer {
         case 'A': .. case 'Z':
         case 'a': .. case 'z':
         case '0': .. case '9':
+        case '.':
         case '_':
           token.string_ ~= this.buffer.next();
           break;
