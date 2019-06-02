@@ -6,10 +6,11 @@ enum BaseType {
   VOID = 1,
   STRING = 2,
   NUMBER = 3,
-  ARRAY = 4,
-  STREAM = 5,
-  TUPLE = 6,
-  ANY = 7,
+  BOOL = 4,
+  ARRAY = 5,
+  STREAM = 6,
+  TUPLE = 7,
+  ANY = 8,
 }
 
 class Type {
@@ -84,5 +85,6 @@ static this() {
   builtinTypes["void"] = new Type(BaseType.VOID);
   builtinTypes["string"] = new Type(BaseType.STRING);
   builtinTypes["number"] = new Type(BaseType.NUMBER);
+  builtinTypes["bool"] = new Type(BaseType.BOOL);
   builtinTypes["any"] = new Type(BaseType.ANY);
 }

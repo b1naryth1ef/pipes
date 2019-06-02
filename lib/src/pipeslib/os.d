@@ -89,4 +89,11 @@ extern (C) {
     dls.includeLinks = true;
     return stream;
   }
+
+  double os_file_size(PipeString* path) {
+    stat_t st;
+    stat(path.start, &st);
+    return st.st_size;
+  }
+
 }

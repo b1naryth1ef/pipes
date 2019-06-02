@@ -36,21 +36,43 @@ class BCStep {
   ASTNodeStep step;
   BCOP[] ops;
 
+  BCID returnValue;
+  Type returnValueType;
+
+  BCStep parentStep;
+
   this(BCID id, ASTNodeStep step) {
     this.id = id;
     this.step = step;
+    this.returnValue = 0;
+    this.returnValueType = builtinTypes["void"];
   }
 
   @property Type returnType() {
-    if (ops.length) {
-      if (step.type == StepType.MAP) {
-        return ops[$-1].resultType.elementType;
-      } else {
-        return ops[$-1].resultType;
-      }
-    }
+    return this.returnValueType;
+  }
 
-    return builtinTypes["void"];
+  /// The type this step passes down to the next step
+  @property Type passType() {
+    final switch (this.step.type) {
+      // Map returns the element type of the return type
+      case StepType.MAP:
+        assert(
+          this.returnValueType.baseType == BaseType.ARRAY ||
+          this.returnValueType.baseType == BaseType.STREAM
+        );
+        return this.returnValueType.elementType;
+      case StepType.PASS:
+        return this.returnValueType;
+      case StepType.FILTER:
+        assert(this.parentStep !is null);
+        return this.parentStep.passType;
+      case StepType.REDUCE:
+      case StepType.CONTINUE:
+      case StepType.STOP:
+        // TODO
+        return builtinTypes["void"];
+    }
   }
 }
 
@@ -132,6 +154,15 @@ class BytecodeCompiler {
     this.steps ~= this.currentStep;
 
     auto exprResult = this.compileOne(step.expr);
+
+    // Finalize the step
+    if (this.currentStep.ops.length) {
+      auto returnOp = this.currentStep.ops[$-1];
+      this.currentStep.returnValue = returnOp.id;
+      this.currentStep.returnValueType = returnOp.resultType;
+    }
+    this.currentStep.parentStep = this.previousStep;
+
     this.previousStep = this.currentStep;
 
     return exprResult;
@@ -166,15 +197,10 @@ class BytecodeCompiler {
     // Placeholder
     args ~= -1;
 
+    // If we have a previous step we need to take its "pass" value and send it
+    //  to our call.
     if (this.previousStep !is null) {
-      Type previousStepReturnType = this.previousStep.returnType;
-
-      /* if (this.previousStep.step.type == StepType.MAP) { */
-      /*   assert(previousStepReturnType.baseType == BaseType.STREAM); */
-      /*   previousStepReturnType = previousStepReturnType.elementType; */
-      /* } */
-
-      auto arg0 = this.addOp(BCI.ARG, [0], previousStepReturnType);
+      auto arg0 = this.addOp(BCI.ARG, [0], this.previousStep.passType);
       args ~= arg0;
       argTypes ~= this.getType(arg0);
     }

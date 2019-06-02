@@ -1,6 +1,6 @@
 module pipelib.global;
 
-import core.stdc.stdio : printf, snprintf, FILE, stdin, fread;
+import core.stdc.stdio : printf, snprintf, FILE, stdin, fread, fopen;
 import core.stdc.stdlib : malloc, free, realloc;
 import core.stdc.string : memcpy, memchr;
 
@@ -223,12 +223,17 @@ extern (C) {
     }
   }
 
-  Stream* lines() {
+  Stream* lines(PipeString* source) {
     auto memory = malloc(Stream.sizeof + FileLineStream.sizeof);
     auto stream = cast(Stream*)memory;
     auto fileStream = cast(FileLineStream*)&memory[Stream.sizeof];
 
-    fileStream.file = stdin;
+    if (source.length == 1 && *source.start == '-') {
+      fileStream.file = stdin;
+    } else {
+      fileStream.file = fopen(source.start, "r");
+    }
+
     fileStream.previousBufferLength = 0;
     stream.data = cast(void*)fileStream;
     stream.nextString = &streamLinesNextString;
@@ -435,7 +440,4 @@ unittest {
   PipeNumber a = 1.0;
   PipeNumber b = 2.0;
   auto tuple = createPipeTuple(a, b);
-
-  import std.stdio;
-  writefln("%s", PipeNumber.sizeof);
 }

@@ -52,6 +52,8 @@ class Parser {
       node.step.type = StepType.REDUCE;
     } else if (token.type == TokenType.SY_PIPE_CONTINUE) {
       node.step.type = StepType.CONTINUE;
+    } else if (token.type == TokenType.SY_PIPE_FILTER) {
+      node.step.type = StepType.FILTER;
     } else {
       writefln("%s", token.type);
       assert(false, "Invalid token after expression (looking for pipe)");
@@ -140,6 +142,7 @@ enum StepType {
   PASS,
   REDUCE,
   CONTINUE,
+  FILTER,
   STOP,
 }
 

@@ -30,8 +30,9 @@ static this() {
   // Regex
   registerBuiltinFunction("re", [builtinTypes["string"], builtinTypes["string"]], stringArray);
   registerBuiltinFunction("re", [stringStream, builtinTypes["string"]], stringArrayStream, "reStream");
+
   // Inputs
-  registerBuiltinFunction("lines", [], stringStream);
+  registerBuiltinFunction("lines", [builtinTypes["string"]], stringStream);
 
   // Numbers
   registerBuiltinFunction("ntoa", [builtinTypes["number"]], builtinTypes["string"]);

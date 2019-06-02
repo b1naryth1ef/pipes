@@ -58,6 +58,7 @@ enum TokenType {
   SY_PIPE_PASS,
   SY_PIPE_REDUCE,
   SY_PIPE_CONTINUE,
+  SY_PIPE_FILTER,
 
   SY_LPAREN,
   SY_RPAREN,
@@ -149,6 +150,12 @@ class Lexer {
         if (buffer.peek(2) == '>') {
           buffer.consume(2);
           return new Token(TokenType.SY_PIPE_CONTINUE);
+        }
+        return null;
+      case '?':
+        if (buffer.peek(2) == '>') {
+          buffer.consume(2);
+          return new Token(TokenType.SY_PIPE_FILTER);
         }
         return null;
       case '^':
