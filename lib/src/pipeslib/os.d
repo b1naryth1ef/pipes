@@ -8,6 +8,7 @@ import core.stdc.stdlib : malloc;
 
 extern (C) {
   struct DirectoryListingStream {
+    PipeString* path;
     DIR *dir;
 
     bool includeFiles;
@@ -19,6 +20,7 @@ extern (C) {
       auto stream = cast(Stream*)memory;
       auto dls = cast(DirectoryListingStream*)&memory[Stream.sizeof];
 
+      dls.path = path;
       dls.dir = opendir(path.start);
       dls.includeFiles = false;
       dls.includeDirs = false;
@@ -33,7 +35,11 @@ extern (C) {
   PipeString* streamDirectoryListingNextString(Stream* stream) {
     auto dls = (cast(DirectoryListingStream*)stream.data);
 
-    // Stream is completed
+    // Prepare a buffer with our initial directory path prefixed
+    char[512] path;
+    memcpy(&path[0], dls.path.start, dls.path.length);
+
+    // If no dir is set that means this stream is completed
     if (dls.dir is null) {
       return null;
     }
@@ -41,16 +47,22 @@ extern (C) {
     dirent* ent;
     while (true) {
       ent = readdir(dls.dir);
-      // If we don't have a entity complete the stream
+
+      // If no entity was read we've completed listing the directory and can mark
+      //  this stream as completed.
       if (ent is null) {
         closedir(dls.dir);
         dls.dir = null;
         return null;
       }
 
+      // Fast path if we're not filtering by entity type
       if (!dls.includeFiles || !dls.includeDirs || !dls.includeLinks) {
         stat_t statbuf;
-        assert(stat(ent.d_name.ptr, &statbuf) != -1);
+
+        // Fill out our buffer with the rest of the path
+        snprintf(&path[dls.path.length], 512 - dls.path.length, "/%s", ent.d_name.ptr);
+        cassert(stat(cast(const(char*))&path, &statbuf) != -1);
 
         if (dls.includeFiles && S_ISREG(statbuf.st_mode)) {
           break;
@@ -64,7 +76,7 @@ extern (C) {
       }
     }
 
-    return createPipeString(cast(immutable(char)*)ent.d_name.ptr, strlen(ent.d_name.ptr));
+    return createPipeString(cast(immutable(char)*)&path[0], strlen(&path[0]));
   }
 
   Stream* os_files(PipeString* path) {

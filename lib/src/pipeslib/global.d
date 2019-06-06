@@ -1,5 +1,6 @@
 module pipelib.global;
 
+import core.stdc.errno : errno;
 import core.stdc.stdio : printf, snprintf, FILE, stdin, fread, fopen;
 import core.stdc.stdlib : malloc, free, realloc;
 import core.stdc.string : memcpy, memchr;
@@ -7,6 +8,13 @@ import core.stdc.string : memcpy, memchr;
 alias PipeNumber = double;
 
 extern (C) {
+  void cassert(bool statement) {
+    if (!statement) {
+      printf("[C ASSERTION ERROR] errno = %i\n", errno);
+      assert(false);
+    }
+  }
+
   /**
     This struct represents a stream of data (either strings or numbers) that can
      be read in a sequential fashion. Streams are optimal for situations where
