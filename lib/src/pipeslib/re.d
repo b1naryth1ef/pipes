@@ -63,7 +63,7 @@ extern (C) {
     return arr;
   }
 
-  Stream* reStream(Stream* source, PipeString* pattern) {
+  Stream* re_match_stream(Stream* source, PipeString* pattern) {
     assert(source.nextString);
 
     int errorcode;
@@ -87,7 +87,7 @@ extern (C) {
     return stream;
   }
 
-  PipeArray* re(PipeString* input, PipeString* pattern) {
+  PipeArray* re_match(PipeString* input, PipeString* pattern) {
     int errorcode;
     size_t erroroffset;
     auto code = pcre2_compile_8(pattern.start, pattern.length, 0, &errorcode, &erroroffset, null);

@@ -3,7 +3,8 @@ module pipelib.os;
 import pipelib.global;
 import core.sys.posix.dirent;
 import core.sys.posix.sys.stat;
-import core.stdc.string : strlen;
+import core.stdc.stdio : snprintf;
+import core.stdc.string : strlen, memcpy;
 import core.stdc.stdlib : malloc;
 
 extern (C) {

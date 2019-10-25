@@ -27,10 +27,6 @@ static this() {
   registerBuiltinFunction("echo", [builtinTypes["string"]], null);
   registerBuiltinFunction("concat", [builtinTypes["string"], builtinTypes["string"]], builtinTypes["string"]);
 
-  // Regex
-  registerBuiltinFunction("re", [builtinTypes["string"], builtinTypes["string"]], stringArray);
-  registerBuiltinFunction("re", [stringStream, builtinTypes["string"]], stringArrayStream, "reStream");
-
   // Inputs
   registerBuiltinFunction("lines", [builtinTypes["string"]], stringStream);
 
