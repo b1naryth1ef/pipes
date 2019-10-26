@@ -3,6 +3,8 @@ module pipes.backend.llvm;
 import llvm;
 import std.string : toStringz;
 import std.format : format;
+import std.stdio : writefln;
+import std.file : exists;
 
 import pipes.types;
 import pipes.frontend.lexer : Lexer;
@@ -28,8 +30,7 @@ class LLVMCompiler {
 
   this(string programContents) {
     auto lexer = new Lexer(programContents);
-
-    auto parser = new Parser(new Lexer(programContents));
+    auto parser = new Parser(lexer);
     this.bytecodeCompiler = new BytecodeCompiler();
     this.bytecodeCompiler.compile(parser.all());
 
@@ -52,6 +53,11 @@ class LLVMCompiler {
     char* error;
     LLVMVerifyModule(this.module_, LLVMAbortProcessAction, &error);
     LLVMDisposeMessage(error);
+
+    if (!exists("lib/libpipes.so")) {
+      writefln("Error: missing lib/libpipes.so");
+      return;
+    }
 
     LLVMExecutionEngineRef engine;
     LLVMLinkInMCJIT();

@@ -105,7 +105,7 @@ class Lexer {
   }
 
   Token peek() {
-    auto previous = this.buffer.idx;
+    auto immutable previous = this.buffer.idx;
     auto token = this.next();
     this.buffer.idx = previous;
     return token;

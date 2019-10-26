@@ -157,7 +157,7 @@ class BytecodeCompiler {
 
     // Finalize the step
     if (this.currentStep.ops.length) {
-      auto returnOp = this.currentStep.ops[$-1];
+      auto immutable returnOp = this.currentStep.ops[$-1];
       this.currentStep.returnValue = returnOp.id;
       this.currentStep.returnValueType = returnOp.resultType;
     }
